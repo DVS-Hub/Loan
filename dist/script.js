@@ -2,6 +2,179 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./src/js/modules/difference.js":
+/*!**************************************!*\
+  !*** ./src/js/modules/difference.js ***!
+  \**************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Difference)
+/* harmony export */ });
+class Difference {
+  constructor(oldOfficer, newOfficer, items) {
+    try {
+      this.oldOfficer = document.querySelector(oldOfficer);
+      this.newOfficer = document.querySelector(newOfficer);
+      this.oldItems = this.oldOfficer.querySelectorAll(items);
+      this.newItems = this.newOfficer.querySelectorAll(items);
+      this.oldCounter = 0;
+      this.newCounter = 0;
+    } catch (e) {}
+  }
+  bindTriggers(container, items, counter) {
+    container.querySelector(".plus").addEventListener("click", () => {
+      if (counter !== items.length - 2) {
+        items[counter].style.display = "flex";
+        counter++;
+      } else {
+        items[counter].style.display = "flex";
+        items[items.length - 1].remove();
+      }
+    });
+  }
+  hideItems(items) {
+    items.forEach((item, i, arr) => {
+      if (i !== arr.length - 1) {
+        item.style.display = "none";
+        item.classList.add("animated", "fadeIn");
+      }
+    });
+  }
+  init() {
+    try {
+      this.hideItems(this.oldItems);
+      this.hideItems(this.newItems);
+      this.bindTriggers(this.oldOfficer, this.oldItems, this.oldCounter);
+      this.bindTriggers(this.newOfficer, this.newItems, this.newCounter);
+    } catch (e) {}
+  }
+}
+
+/***/ }),
+
+/***/ "./src/js/modules/forms.js":
+/*!*********************************!*\
+  !*** ./src/js/modules/forms.js ***!
+  \*********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Forms)
+/* harmony export */ });
+class Forms {
+  constructor(forms) {
+    this.forms = document.querySelectorAll(forms);
+    this.inputs = document.querySelectorAll("input");
+    this.message = {
+      loading: "Загрузка...",
+      success: "Спасибо! Скоро мы с Вами свяжемся!",
+      failure: "Что-то пошло не так..."
+    };
+    this.path = "assets/question.php";
+  }
+  clearInputs() {
+    this.inputs.forEach(input => {
+      input.value = "";
+    });
+  }
+  checkMailInputs() {
+    const mailInputs = document.querySelectorAll('[type="email"]');
+    mailInputs.forEach(input => {
+      input.addEventListener("keypress", function (e) {
+        if (e.key.match(/[^a-z 0-9 @ \.]/gi)) {
+          e.preventDefault();
+        }
+      });
+    });
+  }
+  initMask() {
+    let setCursorPosition = (pos, elem) => {
+      elem.focus();
+      if (elem.setSelectionRange) {
+        elem.setSelectionRange(pos, pos);
+      } else if (elem.createTextRange) {
+        let range = elem.createTextRange();
+        range.collapse(true);
+        range.moveEnd("character", pos);
+        range.moveStart("character", pos);
+        range.select();
+      }
+    };
+    function createMask(event) {
+      let matrix = "+1 (___) ___-____",
+        i = 0,
+        def = matrix.replace(/\D/g, ""),
+        val = this.value.replace(/\D/g, "");
+      if (def.length >= val.length) {
+        val = def;
+      }
+      this.value = matrix.replace(/./g, function (a) {
+        return /[_\d]/.test(a) && i < val.length ? val.charAt(i++) : i >= val.length ? "" : a;
+      });
+      if (event.type === "blur") {
+        if (this.value.length == 2) {
+          this.value = "";
+        }
+        // else {
+        //     setCursorPosition(this.value.length, this);
+        // }
+      } else if (event.type === "click") {
+        if (this.selectionStart <= 2) {
+          setCursorPosition(this.value.length, this);
+        }
+      }
+    }
+    let inputs = document.querySelectorAll('[name="phone"]');
+    inputs.forEach(input => {
+      input.addEventListener("input", createMask);
+      input.addEventListener("focus", createMask);
+      input.addEventListener("blur", createMask);
+      input.addEventListener("click", createMask);
+    });
+  }
+  async postData(url, data) {
+    let res = await fetch(url, {
+      method: "POST",
+      body: data
+    });
+    return await res.text();
+  }
+  init() {
+    this.checkMailInputs();
+    this.initMask();
+    this.forms.forEach(form => {
+      form.addEventListener("submit", e => {
+        e.preventDefault();
+        let statusMessage = document.createElement("div");
+        statusMessage.style.cssText = `
+                margin-top: 15px;
+                font-size: 18px;
+                color: grey;
+            `;
+        form.parentNode.appendChild(statusMessage);
+        statusMessage.textContent = this.message.loading;
+        const formData = new FormData(form);
+        this.postData(this.path, formData).then(res => {
+          console.log(res);
+          statusMessage.textContent = this.message.success;
+        }).catch(() => {
+          statusMessage.textContent = this.message.failure;
+        }).finally(() => {
+          this.clearInputs();
+          setTimeout(() => {
+            statusMessage.remove();
+          }, 6000);
+        });
+      });
+    });
+  }
+}
+
+/***/ }),
+
 /***/ "./src/js/modules/playVideo.js":
 /*!*************************************!*\
   !*** ./src/js/modules/playVideo.js ***!
@@ -18,6 +191,18 @@ class VideoPlayer {
     this.overlay = document.querySelector(overlay);
     this.close = this.overlay.querySelector(".close");
   }
+  playState(event) {
+    let message = JSON.parse(event.data);
+    if (message.type === "player:changeState" && message.data.state === "stopped") {
+      console.log(this.activeBtn);
+      const blockedElem = this.activeBtn.closest(".module__video-item").nextElementSibling;
+      const playBtn = this.activeBtn.querySelector("svg").cloneNode(true);
+      if (blockedElem.querySelector(".play__circle").classList.contains("closed")) {
+        blockedElem.querySelector(".play__circle").classList.remove("closed");
+        blockedElem.querySelector("svg").remove();
+      }
+    }
+  }
   init() {
     // const div = this.overlay.querySelector("#frame");
     // div.innerHTML = `
@@ -33,57 +218,61 @@ class VideoPlayer {
     // ></iframe>;
     // `;
 
-    this.btns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        this.url = btn.getAttribute("data-url");
-        const div = this.overlay.querySelector("#frame");
-        div.innerHTML = `
-        <iframe
-            id="playerFrame"
-            width="100%"
-            height="100%"
-            src="https://rutube.ru/play/embed/${this.url}/"
-            frameBorder="0"
-            allow="clipboard-write; autoplay"
-            webkitAllowFullScreen
-            mozallowfullscreen
-            allowFullScreen
-        ></iframe>;
-        `;
-        this.close.addEventListener("click", () => {
-          document.querySelector("#playerFrame").remove();
-          this.overlay.style.display = "none";
+    if (this.btns.length > 0) {
+      this.btns.forEach(btn => {
+        btn.addEventListener("click", () => {
+          this.activeBtn = btn;
+          console.log(this.activeBtn);
+          this.url = btn.getAttribute("data-url");
+          const div = this.overlay.querySelector("#frame");
+          div.innerHTML = `
+          <iframe
+              id="playerFrame"
+              width="720"
+              height="480"
+              src="https://rutube.ru/play/embed/${this.url}/"
+              frameBorder="0"
+              allow="clipboard-write; autoplay"
+              webkitAllowFullScreen
+              mozallowfullscreen
+              allowFullScreen
+          ></iframe>`;
+          window.addEventListener("message", this.playState);
+          this.close.addEventListener("click", () => {
+            this.overlay.querySelector("#frame").innerHTML = "";
+            this.overlay.style.display = "none";
+            window.removeEventListener("message", this.playState);
+          });
+          this.overlay.style.display = "flex";
         });
-        this.overlay.style.display = "flex";
       });
-    });
+    }
   }
 }
 
 /***/ }),
 
-/***/ "./src/js/modules/slider.js":
-/*!**********************************!*\
-  !*** ./src/js/modules/slider.js ***!
-  \**********************************/
+/***/ "./src/js/modules/slider/slider-main.js":
+/*!**********************************************!*\
+  !*** ./src/js/modules/slider/slider-main.js ***!
+  \**********************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "default": () => (/* binding */ Slider)
+/* harmony export */   "default": () => (/* binding */ MainSlider)
 /* harmony export */ });
-class Slider {
-  constructor(page, btns) {
-    this.page = document.querySelector(page);
-    this.slides = Array.from(this.page.children);
-    this.btns = document.querySelectorAll(btns);
-    this.slideIndex = 1;
+/* harmony import */ var _slider__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./slider */ "./src/js/modules/slider/slider.js");
+
+class MainSlider extends _slider__WEBPACK_IMPORTED_MODULE_0__["default"] {
+  constructor(btns) {
+    super(btns);
   }
   showSlides(n) {
     if (n > this.slides.length) {
       this.slideIndex = 1;
     } else if (n < 1) {
-      this.slideIndex = this.slideIndex.length;
+      this.slideIndex = this.slides.length;
     }
     try {
       this.hanson.style.opacity = "0";
@@ -96,34 +285,16 @@ class Slider {
       } else {
         this.hanson.classList.remove("slideInUp");
       }
-    } catch (e) {
-      return;
-    }
+    } catch (e) {}
     this.slides.forEach(slide => {
       slide.style.display = "none";
     });
     this.slides[this.slideIndex - 1].style.display = "block";
-
-    // if (this.slides[this.slideIndex - 1].classList.contains("modules")) {
-    //   this.slides[this.slideIndex - 1].querySelector(".hanson").style.display =
-    //     "none";
-    //   setTimeout(() => {
-    //     const hanson =
-    //       this.slides[this.slideIndex - 1].querySelector(".hanson");
-    //     hanson.classList.add("animated", "fadeInUp");
-    //     hanson.style.display = "block";
-    //   }, 3000);
-    // }
   }
   plusSlides(n) {
     this.showSlides(this.slideIndex += n);
   }
-  render() {
-    try {
-      this.hanson = document.querySelector(".hanson");
-    } catch (e) {
-      return;
-    }
+  bindTriggers() {
     this.btns.forEach(item => {
       item.addEventListener("click", () => {
         this.plusSlides(1);
@@ -134,7 +305,146 @@ class Slider {
         this.showSlides(this.slideIndex);
       });
     });
-    this.showSlides(this.slideIndex);
+    document.querySelectorAll(".prevmodule").forEach(item => {
+      item.addEventListener("click", e => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.plusSlides(-1);
+      });
+    });
+    document.querySelectorAll(".nextmodule").forEach(item => {
+      item.addEventListener("click", e => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.plusSlides(1);
+      });
+    });
+  }
+  render() {
+    if (this.container) {
+      try {
+        this.hanson = document.querySelector(".hanson");
+      } catch (e) {}
+      this.showSlides(this.slideIndex);
+      this.bindTriggers();
+    }
+  }
+}
+
+/***/ }),
+
+/***/ "./src/js/modules/slider/slider-mini.js":
+/*!**********************************************!*\
+  !*** ./src/js/modules/slider/slider-mini.js ***!
+  \**********************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ MiniSlider)
+/* harmony export */ });
+/* harmony import */ var _slider__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./slider */ "./src/js/modules/slider/slider.js");
+
+class MiniSlider extends _slider__WEBPACK_IMPORTED_MODULE_0__["default"] {
+  constructor(container, next, prev, activeClass, animate, autoplay) {
+    super(container, next, prev, activeClass, animate, autoplay);
+  }
+  decorizeSlides() {
+    this.slides.forEach(slide => {
+      slide.classList.remove(this.activeClass);
+      if (this.animate) {
+        slide.querySelector(".card__title").style.opacity = "0.4";
+        slide.querySelector(".card__controls-arrow").style.opacity = "0";
+      }
+    });
+    this.slides[0].classList.add(this.activeClass);
+    if (this.animate) {
+      this.slides[0].querySelector(".card__title").style.opacity = "1";
+      this.slides[0].querySelector(".card__controls-arrow").style.opacity = "1";
+    }
+  }
+  nextSlide() {
+    let first;
+    do {
+      first = this.slides.shift();
+      this.slides.push(first);
+      this.container.appendChild(first);
+      this.decorizeSlides();
+    } while (this.slides[0].tagName == "BUTTON");
+  }
+  bindTriggers() {
+    this.next.addEventListener("click", () => {
+      this.nextSlide();
+    });
+    this.prev.addEventListener("click", () => {
+      for (let i = this.slides.length - 1; i > 0; i--) {
+        if (this.slides[i].tagName !== "BUTTON") {
+          let last = this.slides[i];
+          this.slides.splice(i, 1);
+          this.slides.unshift(last);
+          this.container.insertBefore(last, this.slides[1]);
+          this.decorizeSlides();
+          break;
+        }
+      }
+    });
+  }
+  init() {
+    try {
+      this.container.style.cssText = `
+      display: flex;
+      flex-wrap: wrap;
+      overflow: hidden;
+      align-items: flex-start;
+  `;
+      this.bindTriggers();
+      this.decorizeSlides();
+      if (this.autoplay) {
+        let id = setInterval(() => this.nextSlide(), 5000);
+        this.container.addEventListener("mouseenter", () => {
+          clearInterval(id);
+        });
+        this.container.addEventListener("mouseleave", () => {
+          id = setInterval(() => this.nextSlide(), 5000);
+        });
+      }
+    } catch (e) {}
+  }
+}
+
+/***/ }),
+
+/***/ "./src/js/modules/slider/slider.js":
+/*!*****************************************!*\
+  !*** ./src/js/modules/slider/slider.js ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "default": () => (/* binding */ Slider)
+/* harmony export */ });
+class Slider {
+  constructor({
+    container = null,
+    btns = null,
+    next = null,
+    prev = null,
+    activeClass = "",
+    animate,
+    autoplay
+  } = {}) {
+    this.container = document.querySelector(container);
+    try {
+      this.slides = Array.from(this.container.children);
+    } catch (e) {}
+    this.btns = document.querySelectorAll(btns);
+    this.prev = document.querySelector(prev);
+    this.next = document.querySelector(next);
+    this.activeClass = activeClass;
+    this.animate = animate;
+    this.autoplay = autoplay;
+    this.slideIndex = 1;
   }
 }
 
@@ -203,15 +513,56 @@ var __webpack_exports__ = {};
   !*** ./src/js/main.js ***!
   \************************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _modules_slider__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./modules/slider */ "./src/js/modules/slider.js");
+/* harmony import */ var _modules_slider_slider_main__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./modules/slider/slider-main */ "./src/js/modules/slider/slider-main.js");
 /* harmony import */ var _modules_playVideo__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./modules/playVideo */ "./src/js/modules/playVideo.js");
+/* harmony import */ var _modules_slider_slider_mini__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./modules/slider/slider-mini */ "./src/js/modules/slider/slider-mini.js");
+/* harmony import */ var _modules_difference__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./modules/difference */ "./src/js/modules/difference.js");
+/* harmony import */ var _modules_forms__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./modules/forms */ "./src/js/modules/forms.js");
+
+
+
 
 
 window.addEventListener("DOMContentLoaded", () => {
-  const slider = new _modules_slider__WEBPACK_IMPORTED_MODULE_0__["default"](".page", ".next");
-  const player = new _modules_playVideo__WEBPACK_IMPORTED_MODULE_1__["default"](".showup .play", ".overlay");
+  const slider = new _modules_slider_slider_main__WEBPACK_IMPORTED_MODULE_0__["default"]({
+    container: ".page",
+    btns: ".next"
+  });
   slider.render();
-  player.init();
+  const modulePageSlider = new _modules_slider_slider_main__WEBPACK_IMPORTED_MODULE_0__["default"]({
+    btns: ".next",
+    container: ".moduleapp"
+  });
+  modulePageSlider.render();
+  new _modules_playVideo__WEBPACK_IMPORTED_MODULE_1__["default"](".showup .play", ".overlay").init();
+  new _modules_playVideo__WEBPACK_IMPORTED_MODULE_1__["default"](".schedule .play", ".overlay").init();
+  new _modules_playVideo__WEBPACK_IMPORTED_MODULE_1__["default"](".module__video-item .play", ".overlay").init();
+  const showUpSlider = new _modules_slider_slider_mini__WEBPACK_IMPORTED_MODULE_2__["default"]({
+    container: ".showup__content-slider",
+    prev: ".showup__prev",
+    next: ".showup__next",
+    activeClass: "card-active",
+    animate: true
+  });
+  showUpSlider.init();
+  const modulesSlider = new _modules_slider_slider_mini__WEBPACK_IMPORTED_MODULE_2__["default"]({
+    container: ".modules__content-slider",
+    prev: ".modules__info-btns .slick-prev",
+    next: ".modules__info-btns .slick-next",
+    activeClass: "card-active",
+    animate: true,
+    autoplay: true
+  });
+  modulesSlider.init();
+  const feedSlider = new _modules_slider_slider_mini__WEBPACK_IMPORTED_MODULE_2__["default"]({
+    container: ".feed__slider",
+    prev: ".feed__slider .slick-prev",
+    next: ".feed__slider .slick-next",
+    activeClass: "feed__item-active"
+  });
+  feedSlider.init();
+  new _modules_difference__WEBPACK_IMPORTED_MODULE_3__["default"](".officerold", ".officernew", ".officer__card-item").init();
+  new _modules_forms__WEBPACK_IMPORTED_MODULE_4__["default"](".form").init();
 });
 })();
 

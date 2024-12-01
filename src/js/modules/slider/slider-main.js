@@ -1,16 +1,15 @@
-export default class Slider {
-  constructor(page, btns) {
-    this.page = document.querySelector(page);
-    this.slides = Array.from(this.page.children);
-    this.btns = document.querySelectorAll(btns);
-    this.slideIndex = 1;
+import Slider from "./slider";
+
+export default class MainSlider extends Slider {
+  constructor(btns) {
+    super(btns);
   }
 
   showSlides(n) {
     if (n > this.slides.length) {
       this.slideIndex = 1;
     } else if (n < 1) {
-      this.slideIndex = this.slideIndex.length;
+      this.slideIndex = this.slides.length;
     }
 
     try {
@@ -26,38 +25,20 @@ export default class Slider {
       } else {
         this.hanson.classList.remove("slideInUp");
       }
-    } catch (e) {
-      return;
-    }
+    } catch (e) {}
 
     this.slides.forEach((slide) => {
       slide.style.display = "none";
     });
 
     this.slides[this.slideIndex - 1].style.display = "block";
-
-    // if (this.slides[this.slideIndex - 1].classList.contains("modules")) {
-    //   this.slides[this.slideIndex - 1].querySelector(".hanson").style.display =
-    //     "none";
-    //   setTimeout(() => {
-    //     const hanson =
-    //       this.slides[this.slideIndex - 1].querySelector(".hanson");
-    //     hanson.classList.add("animated", "fadeInUp");
-    //     hanson.style.display = "block";
-    //   }, 3000);
-    // }
   }
 
   plusSlides(n) {
     this.showSlides((this.slideIndex += n));
   }
 
-  render() {
-    try {
-      this.hanson = document.querySelector(".hanson");
-    } catch (e) {
-      return;
-    }
+  bindTriggers() {
     this.btns.forEach((item) => {
       item.addEventListener("click", () => {
         this.plusSlides(1);
@@ -69,6 +50,31 @@ export default class Slider {
       });
     });
 
-    this.showSlides(this.slideIndex);
+    document.querySelectorAll(".prevmodule").forEach((item) => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.plusSlides(-1);
+      });
+    });
+
+    document.querySelectorAll(".nextmodule").forEach((item) => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.plusSlides(1);
+      });
+    });
+  }
+
+  render() {
+    if (this.container) {
+      try {
+        this.hanson = document.querySelector(".hanson");
+      } catch (e) {}
+
+      this.showSlides(this.slideIndex);
+      this.bindTriggers();
+    }
   }
 }
